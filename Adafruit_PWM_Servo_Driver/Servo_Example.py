@@ -45,7 +45,7 @@ def setFootY(pwm, footno, ypos):
 for hip in [12, 13, 14, 15]:
   setAngle(pwm,hip,0)
 
-for iter in range(1):
+for iter in range(10):
   for i in range(15):
     for leg in range(6):
       setFootY(pwm,leg,-10 + i*5)
@@ -77,14 +77,14 @@ setAngle(pwm,0,-60)
 time.sleep(0.2)
 setAngle(pwm,0,60)
 
-time.sleep(5)
+time.sleep(2)
 
 setAngle(pwm,12,0)
 
 for leg in range(6):
   setFootY(pwm,leg,-10)
 
-time.sleep(0.5)
+time.sleep(1)
 
 for i in range(16):
   pwm.setPWM(i,0,0)
