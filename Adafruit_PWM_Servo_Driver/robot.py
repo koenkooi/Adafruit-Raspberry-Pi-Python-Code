@@ -1,18 +1,37 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 from Adafruit_PWM_Servo_Driver import PWM
 import time
 import math
+import threading
 
 # Controller at i2c address 0x40
-pwm = PWM(0x40, debug=True)
+pwm = PWM(0x40, debug=False)
+#pwm2 = PWM(0x41, debug=False)
 
 # Store offsets, cheap analog servos aren't that precise
 servoCenter = [410,430,395,360,390,370,370,380,380,360,390,400,480,370,380,370, 16, 17, 18]
 servoMin = [170,185,150,135,155,140,140,140,140,135,150,160,220,135,145,140, 16, 17, 18]
 servoMax = [650,660,650,620,640,620,640,630,640,610,635,635,670,630,645,645, 16, 17, 18]
 
-pwm.setPWMFreq(60)												# Set frequency to 60 Hz
+# Interpolation steps
+stepPerS = 25
+
+# Max height
+floor = 70
+
+# Set frequency to 60 Hz, max for servos
+pwm.setPWMFreq(60)
+
+class runMovement(threading.Thread):
+	def __init__(self,function,*args):
+		threading.Thread.__init__(self)
+		self.function=function
+		self.args = args
+		self.start()
+
+	def run(self):
+		self.function(*self.args)
 
 class hexapod():
 	def __init__(self):
@@ -65,31 +84,39 @@ class leg():
 			setAngle(self.ankleServoNum, deg)
 
 	def setHipDeg(self,endHipAngle,stepTime=1):
-		#currentHipAngle = self.con.servos[self.hipServoNum].getPosDeg()
-		#hipMaxDiff = endHipAngle-currentHipAngle
+		runMovement(self.setHipDeg_function,endHipAngle,stepTime)
 		
+	def setHipDeg_function(self,endHipAngle,stepTime):
 		#print "endHipAngle: %s,servoNum: %s" % (endHipAngle, self.hipServoNum)
-		setAngle(self.hipServoNum, endHipAngle)
-		time.sleep(stepTime)
 		
 		'''
-			steps = range(int(stepPerS))
-			for i,t in enumerate(steps):
+		# Non-interpolated version
+		setAngle(self.hipServoNum, endHipAngle)
+		time.sleep(stepTime)
+		'''
+		
+		currentHipAngle = getAngle(self.hipServoNum)
+		hipMaxDiff = endHipAngle-currentHipAngle
+		
+		steps = range(int(stepPerS*stepTime))
+		for i,t in enumerate(steps):
 			# TODO: implement time-movements the servo commands sent for far fewer
 			#       total servo commands
 			hipAngle = (hipMaxDiff/len(steps))*(i+1)
 			try:
-			anglNorm=hipAngle*(180/(hipMaxDiff))
+				anglNorm=hipAngle*(180/(hipMaxDiff))
 			except:
-			anglNorm=hipAngle*(180/(1))
+				anglNorm=hipAngle*(180/(1))
 			hipAngle = currentHipAngle+hipAngle
-			self.con.servos[self.hipServoNum].setPos(deg=hipAngle)
+			setAngle(self.hipServoNum, hipAngle)
 			
 			#wait for next cycle
 			time.sleep(stepTime/float(stepPerS))
-			'''
-	
+
 	def setFootY(self,footY,stepTime=1):
+		runMovement(self.setFootY_function,footY,stepTime)
+		
+	def setFootY_function(self,footY,stepTime):
 		# TODO: max steptime dependent
 		# TODO: implement time-movements the servo commands sent for far fewer
 		#       total servo commands
@@ -102,13 +129,15 @@ class leg():
 			setAngle(self.ankleServoNum,-ankleAngle)
 	
 	def replantFoot(self,endHipAngle,stepTime=1, height=60):
+		runMovement(self.replantFoot_function,endHipAngle,stepTime, height)
+		
+	def replantFoot_function(self,endHipAngle,stepTime, height):
 		# Smoothly moves a foot from one position on the ground to another in time seconds
 		# TODO: implement time-movements the servo commands sent for far fewer total servo
 		#       commands
 		
-		#currentHipAngle = self.con.servos[self.hipServoNum].getPosDeg()
-		#hipMaxDiff = endHipAngle-currentHipAngle
-		
+		'''
+		# Non-interpolated version
 		# Raise boot to max
 		self.setFootY(0,stepTime=0)
 		# Rotate hip
@@ -117,10 +146,12 @@ class leg():
 		time.sleep(stepTime/2)
 		# Lower foot to height
 		self.setFootY(height,stepTime=0)
-		
-		
 		'''
-		steps = range(int(stepPerS))
+
+		currentHipAngle = getAngle(self.hipServoNum)
+		hipMaxDiff = endHipAngle - currentHipAngle
+			
+		steps = range(int(stepPerS*stepTime))
 		for i,t in enumerate(steps):
 			
 			hipAngle = (hipMaxDiff/len(steps))*(i+1)
@@ -128,37 +159,34 @@ class leg():
 			
 			#calculate the absolute distance between the foot's highest and lowest point
 			footMax = 0
-			footMin = floor
+			footMin = height
 			footRange = abs(footMax-footMin)
 			
 			#normalize the range of the hip movement to 180 deg
 			try:
-			anglNorm=hipAngle*(180/(hipMaxDiff))
+				anglNorm=hipAngle*(180/(hipMaxDiff))
 			except:
-			anglNorm=hipAngle*(180/(1))
+				anglNorm=hipAngle*(180/(1))
 			#print "normalized angle:",anglNorm
 			
 			#base footfall on a sin pattern from footfall to footfall with 0 as the midpoint
 			footY = footMin-math.sin(math.radians(anglNorm))*footRange
-			#print "calculated footY",footY
+			#rint "calculated footY",footY
 			
 			#set foot height
 			self.setFootY(footY,stepTime=0)
 			hipAngle = currentHipAngle+hipAngle
-			self.con.servos[self.hipServoNum].setPos(deg=hipAngle)
+			setAngle(self.hipServoNum, hipAngle)
 			
 			#wait for next cycle
 			time.sleep(stepTime/float(stepPerS))
-		'''
 
 
 def setAngle(channel, angle):
 	if channel > 15:
-		print "servoNum out of range: %s" % channel
+		#print "servoNum out of range: %s" % channel
 		return
-	#pace steps
-	#time.sleep (1/60.0)
-
+	
 	if angle < -90:
 		angle = -90
 	if angle > 90:
@@ -170,4 +198,25 @@ def setAngle(channel, angle):
 	if angle < 0:
 		pwmvalue = servoCenter[channel] + (angle/90.0)*abs(servoCenter[channel] - servoMin[channel])
 	#print "\t\t\t%s: angle: %s, pwmvalue: %s" % (channel, angle, pwmvalue)
-	pwm.setPWM(channel, 0, int(pwmvalue))
+
+	if channel < 16:
+		pwm.setPWM(channel, 0, int(pwmvalue))
+	else:
+		pwm2.setPWM(channel - 16, 0, int(pwmvalue))
+
+def getAngle(channel):
+	if channel > 15:
+		#print "servoNum out of range: %s" % channel
+		return 0
+
+	if channel < 16:
+		pwmvalue = pwm.getPWM(channel)
+	else:
+		pwmvalue = pwm2.getPWM(channel)
+			
+	if pwmvalue > servoCenter[channel]:
+		angle = (pwmvalue - servoCenter[channel])*(servoMax[channel] - servoCenter[channel])/90.0
+	else:
+		angle = (servoCenter[channel] - pwmvalue)*(servoCenter[channel] - servoMin[channel])/90.0
+
+	return angle
