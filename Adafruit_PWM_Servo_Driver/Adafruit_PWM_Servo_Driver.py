@@ -73,5 +73,5 @@ class PWM :
       return
     on = self.i2c.readU8(self.__LED0_ON_L+4*channel) + self.i2c.readU8(self.__LED0_ON_H+4*channel) * 256
     off = self.i2c.readU8(self.__LED0_OFF_L+4*channel) +self.i2c.readU8(self.__LED0_OFF_H+4*channel) * 256
-    return off
+    return off - on
 
