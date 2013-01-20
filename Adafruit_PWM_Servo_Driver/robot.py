@@ -20,41 +20,41 @@ RB = 3
 RM = 4
 RF = 5
 
-pwm.setPWMFreq(60)                        # Set frequency to 60 Hz
+pwm.setPWMFreq(60)												# Set frequency to 60 Hz
 
 def setAngle(pwm, channel, angle):
-  if angle < -90:
-    angle = -90
-  if angle > 90:
-    angle = 90
-  if angle == 0:
-    pwmvalue = servoCenter[channel]
-  if angle > 0:
-    pwmvalue = servoCenter[channel] + (angle/90.0)*abs(servoMax[channel] - servoCenter[channel])
-  if angle < 0:
-    pwmvalue = servoCenter[channel] + (angle/90.0)*abs(servoCenter[channel] - servoMin[channel]) 
-  pwm.setPWM(channel, 0, int(pwmvalue))
-  #print "angle: %s, pwmvalue: %s" % (angle, pwmvalue)
+	if angle < -90:
+		angle = -90
+	if angle > 90:
+		angle = 90
+	if angle == 0:
+		pwmvalue = servoCenter[channel]
+	if angle > 0:
+		pwmvalue = servoCenter[channel] + (angle/90.0)*abs(servoMax[channel] - servoCenter[channel])
+	if angle < 0:
+		pwmvalue = servoCenter[channel] + (angle/90.0)*abs(servoCenter[channel] - servoMin[channel])
+	pwm.setPWM(channel, 0, int(pwmvalue))
+	#print "angle: %s, pwmvalue: %s" % (angle, pwmvalue)
 
 def setFootY(pwm, footno, ypos):
-  kneeAngle = math.degrees(math.asin(float(ypos)/85.0))
-  ankleAngle = 90.0-kneeAngle
-  setAngle(pwm,footno*2+1,kneeAngle)
-  setAngle(pwm,footno*2,-ankleAngle)
+	kneeAngle = math.degrees(math.asin(float(ypos)/85.0))
+	ankleAngle = 90.0-kneeAngle
+	setAngle(pwm,footno*2+1,kneeAngle)
+	setAngle(pwm,footno*2,-ankleAngle)
 
 for hip in [12, 13, 14, 15]:
-  setAngle(pwm,hip,0)
+	setAngle(pwm,hip,0)
 
 for iter in range(10):
-  for i in range(15):
-    for leg in range(6):
-      setFootY(pwm,leg,-10 + i*5)
-    time.sleep(1/60.0)
+	for i in range(15):
+		for leg in range(6):
+			setFootY(pwm,leg,-10 + i*5)
+		time.sleep(1/60.0)
 
-  for i in range(15):
-    for leg in range(6):
-      setFootY(pwm,leg,65-i*5)
-    time.sleep(1/60.0)
+	for i in range(15):
+		for leg in range(6):
+			setFootY(pwm,leg,65-i*5)
+		time.sleep(1/60.0)
 
 time.sleep(1)
 
@@ -82,9 +82,9 @@ time.sleep(2)
 setAngle(pwm,12,0)
 
 for leg in range(6):
-  setFootY(pwm,leg,-10)
+	setFootY(pwm,leg,-10)
 
 time.sleep(1)
 
 for i in range(16):
-  pwm.setPWM(i,0,0)
+	pwm.setPWM(i,0,0)
