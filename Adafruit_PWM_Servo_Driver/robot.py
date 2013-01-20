@@ -68,6 +68,7 @@ class leg():
 		#currentHipAngle = self.con.servos[self.hipServoNum].getPosDeg()
 		#hipMaxDiff = endHipAngle-currentHipAngle
 		
+		#print "endHipAngle: %s,servoNum: %s" % (endHipAngle, self.hipServoNum)
 		setAngle(self.hipServoNum, endHipAngle)
 		time.sleep(stepTime)
 		
@@ -93,8 +94,9 @@ class leg():
 		# TODO: implement time-movements the servo commands sent for far fewer
 		#       total servo commands
 		
+		#print "footY: %s" % footY
 		if (footY < 75) and (footY > -75):
-			kneeAngle = math.degrees(math.asin(float(footY)/85.0))
+			kneeAngle = math.degrees(math.asin(float(footY)/75.0))
 			ankleAngle = 90.0-kneeAngle
 			setAngle(self.kneeServoNum, kneeAngle)
 			setAngle(self.ankleServoNum,-ankleAngle)
@@ -151,6 +153,12 @@ class leg():
 
 
 def setAngle(channel, angle):
+	if channel > 15:
+		print "servoNum out of range: %s" % channel
+		return
+	#pace steps
+	#time.sleep (1/60.0)
+
 	if angle < -90:
 		angle = -90
 	if angle > 90:
@@ -161,5 +169,5 @@ def setAngle(channel, angle):
 		pwmvalue = servoCenter[channel] + (angle/90.0)*abs(servoMax[channel] - servoCenter[channel])
 	if angle < 0:
 		pwmvalue = servoCenter[channel] + (angle/90.0)*abs(servoCenter[channel] - servoMin[channel])
+	#print "\t\t\t%s: angle: %s, pwmvalue: %s" % (channel, angle, pwmvalue)
 	pwm.setPWM(channel, 0, int(pwmvalue))
-	#print "angle: %s, pwmvalue: %s" % (angle, pwmvalue)
