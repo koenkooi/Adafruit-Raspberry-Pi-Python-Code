@@ -15,10 +15,10 @@ servoMin = [170,185,150,135,155,140,140,140,140,135,150,160,220,135,145,140, 16,
 servoMax = [650,660,650,620,640,620,640,630,640,610,635,635,670,630,645,645, 16, 17, 18]
 
 # Interpolation steps
-stepPerS = 8
+stepPerS = 16
 
 # Max height
-floor = 70
+floor = 60
 
 # Set frequency to 60 Hz, max for servos
 pwm.setPWMFreq(60)
@@ -120,7 +120,7 @@ class leg():
 			#wait for next cycle
 			time.sleep(stepDelay)
 
-	def setFootY(self,footY,stepTime=1):
+	def setFootY(self,footY,stepTime=0.2):
 		runMovement(self.setFootY_function, footY,stepTime)
 		
 	def setFootY_function(self,footY,stepTime):
@@ -130,11 +130,28 @@ class leg():
 		
 		#print "footY: %s" % footY
 		if (footY < 75) and (footY > -75):
+
+			lock.acquire()
+			currentKneeAngle = getAngle(self.kneeServoNum)
+			currentAnkleAngle = getAngle(self.ankleServoNum)
+			lock.release()
+			
 			kneeAngle = math.degrees(math.asin(float(footY)/75.0))
 			ankleAngle = 90.0-kneeAngle
-			setAngle(self.kneeServoNum, kneeAngle)
-			setAngle(self.ankleServoNum,-ankleAngle)
-	
+
+			kneeDiff = float(kneeAngle - currentKneeAngle)
+			ankleDiff = float(ankleAngle - currentAnkleAngle)
+
+			steps = range(int(stepPerS*stepTime))
+			stepDelay = 1/float(stepPerS * stepTime)
+			for i,t in enumerate(steps):
+				newKneeAngle = (kneeDiff/len(steps))*(i+1)
+				newAnkleAngle = (ankleDiff/len(steps))*(i+1)
+				setAngle(self.kneeServoNum, currentKneeAngle + newKneeAngle)
+				setAngle(self.ankleServoNum,-(currentAnkleAngle + newAnkleAngle))
+
+				time.sleep(stepDelay)
+
 	def replantFoot(self,endHipAngle,stepTime=1, height=60):
 		runMovement(self.replantFoot_function, endHipAngle,stepTime, height)
 		
