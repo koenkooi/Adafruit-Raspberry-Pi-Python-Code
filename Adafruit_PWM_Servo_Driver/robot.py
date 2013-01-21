@@ -15,7 +15,7 @@ servoMin = [170,185,150,135,155,140,140,140,140,135,150,160,220,135,145,140, 16,
 servoMax = [650,660,650,620,640,620,640,630,640,610,635,635,670,630,645,645, 16, 17, 18]
 
 # Interpolation steps
-stepPerS = 25
+stepPerS = 8
 
 # Max height
 floor = 70
@@ -23,11 +23,14 @@ floor = 70
 # Set frequency to 60 Hz, max for servos
 pwm.setPWMFreq(60)
 
+lock = threading.Lock()
+
 class runMovement(threading.Thread):
 	def __init__(self,function,*args):
 		threading.Thread.__init__(self)
 		self.function=function
 		self.args = args
+		self.lock = lock
 		self.start()
 
 	def run(self):
@@ -84,7 +87,7 @@ class leg():
 			setAngle(self.ankleServoNum, deg)
 
 	def setHipDeg(self,endHipAngle,stepTime=1):
-		runMovement(self.setHipDeg_function,endHipAngle,stepTime)
+		runMovement(self.setHipDeg_function, endHipAngle,stepTime)
 		
 	def setHipDeg_function(self,endHipAngle,stepTime):
 		#print "endHipAngle: %s,servoNum: %s" % (endHipAngle, self.hipServoNum)
@@ -95,10 +98,14 @@ class leg():
 		time.sleep(stepTime)
 		'''
 		
+		lock.acquire()
 		currentHipAngle = getAngle(self.hipServoNum)
-		hipMaxDiff = endHipAngle-currentHipAngle
+		lock.release()
+		
+		hipMaxDiff = float(endHipAngle-currentHipAngle)
 		
 		steps = range(int(stepPerS*stepTime))
+		stepDelay = 1/float(stepPerS * stepTime)
 		for i,t in enumerate(steps):
 			# TODO: implement time-movements the servo commands sent for far fewer
 			#       total servo commands
@@ -106,15 +113,15 @@ class leg():
 			try:
 				anglNorm=hipAngle*(180/(hipMaxDiff))
 			except:
-				anglNorm=hipAngle*(180/(1))
+				anglNorm=hipAngle*(180/(1.0))
 			hipAngle = currentHipAngle+hipAngle
 			setAngle(self.hipServoNum, hipAngle)
 			
 			#wait for next cycle
-			time.sleep(stepTime/float(stepPerS))
+			time.sleep(stepDelay)
 
 	def setFootY(self,footY,stepTime=1):
-		runMovement(self.setFootY_function,footY,stepTime)
+		runMovement(self.setFootY_function, footY,stepTime)
 		
 	def setFootY_function(self,footY,stepTime):
 		# TODO: max steptime dependent
@@ -129,7 +136,7 @@ class leg():
 			setAngle(self.ankleServoNum,-ankleAngle)
 	
 	def replantFoot(self,endHipAngle,stepTime=1, height=60):
-		runMovement(self.replantFoot_function,endHipAngle,stepTime, height)
+		runMovement(self.replantFoot_function, endHipAngle,stepTime, height)
 		
 	def replantFoot_function(self,endHipAngle,stepTime, height):
 		# Smoothly moves a foot from one position on the ground to another in time seconds
@@ -148,12 +155,17 @@ class leg():
 		self.setFootY(height,stepTime=0)
 		'''
 
+		lock.acquire()
 		currentHipAngle = getAngle(self.hipServoNum)
-		hipMaxDiff = endHipAngle - currentHipAngle
+		lock.release()
+		
+		hipMaxDiff = float(endHipAngle - currentHipAngle)
 			
 		steps = range(int(stepPerS*stepTime))
+		stepDelay = 1/float(stepPerS * stepTime)
 		for i,t in enumerate(steps):
-			
+	
+			#print "replantFoot %s:\ti: %s cur: %s end: %s max: %s" % (self.hipServoNum, i, currentHipAngle, endHipAngle, hipMaxDiff)
 			hipAngle = (hipMaxDiff/len(steps))*(i+1)
 			#print "hip angle calc'd:",hipAngle
 			
@@ -166,12 +178,12 @@ class leg():
 			try:
 				anglNorm=hipAngle*(180/(hipMaxDiff))
 			except:
-				anglNorm=hipAngle*(180/(1))
+				anglNorm=hipAngle*(180/(1.0))
 			#print "normalized angle:",anglNorm
 			
 			#base footfall on a sin pattern from footfall to footfall with 0 as the midpoint
 			footY = footMin-math.sin(math.radians(anglNorm))*footRange
-			#rint "calculated footY",footY
+			#print "calculated footY",footY
 			
 			#set foot height
 			self.setFootY(footY,stepTime=0)
@@ -179,7 +191,7 @@ class leg():
 			setAngle(self.hipServoNum, hipAngle)
 			
 			#wait for next cycle
-			time.sleep(stepTime/float(stepPerS))
+			time.sleep(stepDelay)
 
 
 def setAngle(channel, angle):
@@ -199,10 +211,12 @@ def setAngle(channel, angle):
 		pwmvalue = servoCenter[channel] + (angle/90.0)*abs(servoCenter[channel] - servoMin[channel])
 	#print "\t\t\t%s: angle: %s, pwmvalue: %s" % (channel, angle, pwmvalue)
 
+	lock.acquire()
 	if channel < 16:
 		pwm.setPWM(channel, 0, int(pwmvalue))
 	else:
 		pwm2.setPWM(channel - 16, 0, int(pwmvalue))
+	lock.release()
 
 def getAngle(channel):
 	if channel > 15:
@@ -215,8 +229,11 @@ def getAngle(channel):
 		pwmvalue = pwm2.getPWM(channel)
 			
 	if pwmvalue > servoCenter[channel]:
-		angle = (pwmvalue - servoCenter[channel])*(servoMax[channel] - servoCenter[channel])/90.0
+		angle = 90.0*(pwmvalue - servoCenter[channel])/float(servoMax[channel] - servoCenter[channel])
 	else:
-		angle = (servoCenter[channel] - pwmvalue)*(servoCenter[channel] - servoMin[channel])/90.0
-
-	return angle
+		angle = 90.0*(servoCenter[channel] - pwmvalue)/float(servoCenter[channel] - servoMin[channel])
+	#print "%s: angle %s" % (channel, angle)
+	if (angle > -90) and (angle < 90):
+		return angle
+	else:
+		return 0
