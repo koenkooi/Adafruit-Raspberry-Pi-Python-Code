@@ -152,6 +152,27 @@ class leg():
 
 				time.sleep(stepDelay)
 
+	def setFootXY_function(self,footX, footY,stepTime):
+		print "IK function called. x=", x, "y=", y
+		a = 48.0
+		b = 51.0
+		try:
+			d = math.sqrt(x*x+y*y)
+			k = (d*d-b*b+a*a)/(2*d)
+			m = math.sqrt(a*a-k*k)
+		except ZeroDivisionError:
+			print "Divide by Zero error. No valid joint solution."
+			return
+		except ValueError:
+			print "Math function error. Probably square root of negative number. No valid joint solution."
+			return
+		theta = math.degrees(math.atan2(float(y),float(x))-math.atan2(m,k))
+		phi   = math.degrees(math.atan2(m,k)+math.atan2(m,(d-k)))
+					
+		setAngle(self.kneeServoNum, theta)
+		setAngle(self.ankleServoNum, -phi)
+
+
 	def replantFoot(self,endHipAngle,stepTime=1, height=60):
 		runMovement(self.replantFoot_function, endHipAngle,stepTime, height)
 		
