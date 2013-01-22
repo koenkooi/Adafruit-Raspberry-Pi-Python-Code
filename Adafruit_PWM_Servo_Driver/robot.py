@@ -152,25 +152,51 @@ class leg():
 
 				time.sleep(stepDelay)
 
+	def setFootXY(self,footX, footY, stepTime=0.2):
+		runMovement(self.setFootXY_function, footX, footY, stepTime)
+
 	def setFootXY_function(self,footX, footY,stepTime):
-		print "IK function called. x=", x, "y=", y
-		a = 48.0
-		b = 51.0
-		try:
-			d = math.sqrt(x*x+y*y)
-			k = (d*d-b*b+a*a)/(2*d)
-			m = math.sqrt(a*a-k*k)
-		except ZeroDivisionError:
-			print "Divide by Zero error. No valid joint solution."
-			return
-		except ValueError:
-			print "Math function error. Probably square root of negative number. No valid joint solution."
-			return
-		theta = math.degrees(math.atan2(float(y),float(x))-math.atan2(m,k))
-		phi   = math.degrees(math.atan2(m,k)+math.atan2(m,(d-k)))
-					
-		setAngle(self.kneeServoNum, theta)
-		setAngle(self.ankleServoNum, -phi)
+		if (footY < 100) and (footY > -100):
+
+			a = 48.0
+			b = 51.0
+
+			try:
+				d = math.sqrt(footX*footX+footY*footY)
+				k = (d*d-b*b+a*a)/(2*d)
+				m = math.sqrt(a*a-k*k)
+			except ZeroDivisionError:
+				print "Divide by Zero error. No valid joint solution."
+				return
+			except ValueError:
+				print "Math function error. Probably square root of negative number. No valid joint solution."
+				return
+			theta = math.degrees(math.atan2(float(footY),float(footX))-math.atan2(m,k))
+			phi   = math.degrees(math.atan2(m,k)+math.atan2(m,(d-k)))
+
+			#x=acos(theta)+bcos(theta + phi)
+			#y=asin(theta)+bsin(theta + phi)
+			
+			lock.acquire()
+			currentKneeAngle = getAngle(self.kneeServoNum)
+			currentAnkleAngle = getAngle(self.ankleServoNum)
+			lock.release()
+			
+			kneeAngle = theta
+			ankleAngle = phi
+			
+			kneeDiff = float(kneeAngle - currentKneeAngle)
+			ankleDiff = float(ankleAngle - currentAnkleAngle)
+			
+			steps = range(int(stepPerS*stepTime))
+			stepDelay = 1/float(stepPerS * stepTime)
+			for i,t in enumerate(steps):
+				newKneeAngle = (kneeDiff/len(steps))*(i+1)
+				newAnkleAngle = (ankleDiff/len(steps))*(i+1)
+				setAngle(self.kneeServoNum, currentKneeAngle + newKneeAngle)
+				setAngle(self.ankleServoNum,-(currentAnkleAngle + newAnkleAngle))
+				
+				time.sleep(stepDelay)
 
 
 	def replantFoot(self,endHipAngle,stepTime=1, height=60):
@@ -237,10 +263,12 @@ def setAngle(channel, angle):
 		#print "servoNum out of range: %s" % channel
 		return
 	
-	if angle < -90:
-		angle = -90
-	if angle > 90:
-		angle = 90
+	if angle < -92:
+		print "Angle smaller than -92: %s for channel %s" % (angle, channel)
+		angle = -92
+	if angle > 92:
+		print "Angle larger than 90: %s for channel %s" % (angle, channel)
+		angle = 92
 	if angle == 0:
 		pwmvalue = servoCenter[channel]
 	if angle > 0:
