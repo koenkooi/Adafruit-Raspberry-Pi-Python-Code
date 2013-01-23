@@ -4,6 +4,8 @@ from Adafruit_PWM_Servo_Driver import PWM
 import time
 import math
 import threading
+from datetime import datetime, timedelta
+
 
 # Controller at i2c address 0x40
 pwm = PWM(0x40, debug=False)
@@ -15,10 +17,14 @@ servoMin = [170,185,150,135,155,140,140,140,140,135,150,160,220,135,145,140, 16,
 servoMax = [650,660,650,620,640,620,640,630,640,610,635,635,670,630,645,645, 16, 17, 18]
 
 # Interpolation steps
-stepPerS = 16
+stepPerS = 10
 
 # Max height
 floor = 60
+
+# leg dimensions
+legLength = 48.0
+footLength = 51.0
 
 # Set frequency to 60 Hz, max for servos
 pwm.setPWMFreq(60)
@@ -105,8 +111,9 @@ class leg():
 		hipMaxDiff = float(endHipAngle-currentHipAngle)
 		
 		steps = range(int(stepPerS*stepTime))
-		stepDelay = 1/float(stepPerS * stepTime)
+		stepDelay = 1/float(stepPerS)
 		for i,t in enumerate(steps):
+			startiter = datetime.now()
 			# TODO: implement time-movements the servo commands sent for far fewer
 			#       total servo commands
 			hipAngle = (hipMaxDiff/len(steps))*(i+1)
@@ -118,7 +125,15 @@ class leg():
 			setAngle(self.hipServoNum, hipAngle)
 			
 			#wait for next cycle
-			time.sleep(stepDelay)
+			enditer = datetime.now()
+			elapsed = enditer - startiter
+			elapsedTime = elapsed.microseconds / 1000000.0
+			if elapsedTime < stepDelay*0.9:
+				stepSleep = stepDelay -elapsedTime
+				time.sleep(stepSleep)
+			enditer2 = datetime.now()
+			elapsed2 = enditer2 - startiter
+			#print "Iteration took %s/%s ms sleep, expected %s ms" % (elapsed2.microseconds/1000.0, elapsedTime * 1000, stepDelay * 1000)
 
 	def setFootY(self,footY,stepTime=0.2):
 		runMovement(self.setFootY_function, footY,stepTime)
@@ -139,32 +154,46 @@ class leg():
 			kneeAngle = math.degrees(math.asin(float(footY)/75.0))
 			ankleAngle = 90.0-kneeAngle
 
-			kneeDiff = float(kneeAngle - currentKneeAngle)
-			ankleDiff = float(ankleAngle - currentAnkleAngle)
+			if stepTime > (2/float(stepPerS)):
+				kneeDiff = float(kneeAngle - currentKneeAngle)
+				ankleDiff = float(ankleAngle - currentAnkleAngle)
 
-			steps = range(int(stepPerS*stepTime))
-			stepDelay = 1/float(stepPerS * stepTime)
-			for i,t in enumerate(steps):
-				newKneeAngle = (kneeDiff/len(steps))*(i+1)
-				newAnkleAngle = (ankleDiff/len(steps))*(i+1)
-				setAngle(self.kneeServoNum, currentKneeAngle + newKneeAngle)
-				setAngle(self.ankleServoNum,-(currentAnkleAngle + newAnkleAngle))
+				steps = range(int(stepPerS*stepTime))
+				stepDelay = 1/float(stepPerS)
+				loopstart = datetime.now()
+				for i,t in enumerate(steps):
+					startiter = datetime.now()
+					newKneeAngle = (kneeDiff/len(steps))*(i+1)
+					newAnkleAngle = (ankleDiff/len(steps))*(i+1)
+					setAngle(self.kneeServoNum, currentKneeAngle + newKneeAngle)
+					setAngle(self.ankleServoNum,-(currentAnkleAngle + newAnkleAngle))
 
-				time.sleep(stepDelay)
+					enditer = datetime.now()
+					elapsed = enditer - startiter
+					elapsedTime = elapsed.microseconds / 1000000.0
+					if elapsedTime < stepDelay*0.9:
+						stepSleep = stepDelay -elapsedTime
+						time.sleep(stepSleep)
+					enditer2 = datetime.now()
+					elapsed2 = enditer2 - startiter
+					#print "Iteration took %s/%s ms sleep, expected %s ms" % (elapsed2.microseconds/1000.0, elapsedTime * 1000, stepDelay * 1000)
+				loopend = datetime.now()
+				loopelapsed = loopend - loopstart
+				#print str(loopelapsed)
+			else:
+				setAngle(self.kneeServoNum, kneeAngle)
+				setAngle(self.ankleServoNum,-ankleAngle)
 
 	def setFootXY(self,footX, footY, stepTime=0.2):
 		runMovement(self.setFootXY_function, footX, footY, stepTime)
 
 	def setFootXY_function(self,footX, footY,stepTime):
-		if (footY < 100) and (footY > -100):
-
-			a = 48.0
-			b = 51.0
+		if math.sqrt(footX*footX + footY*footY) < (footLength + legLength):
 
 			try:
 				d = math.sqrt(footX*footX+footY*footY)
-				k = (d*d-b*b+a*a)/(2*d)
-				m = math.sqrt(a*a-k*k)
+				k = (d*d-footLength*footLength+legLength*legLength)/(2*d)
+				m = math.sqrt(legLength*legLength-k*k)
 			except ZeroDivisionError:
 				print "Divide by Zero error. No valid joint solution."
 				return
@@ -189,15 +218,30 @@ class leg():
 			ankleDiff = float(ankleAngle - currentAnkleAngle)
 			
 			steps = range(int(stepPerS*stepTime))
-			stepDelay = 1/float(stepPerS * stepTime)
+			stepDelay = 1/float(stepPerS)
+
+			start = datetime.now()
 			for i,t in enumerate(steps):
+				startiter = datetime.now()
 				newKneeAngle = (kneeDiff/len(steps))*(i+1)
 				newAnkleAngle = (ankleDiff/len(steps))*(i+1)
 				setAngle(self.kneeServoNum, currentKneeAngle + newKneeAngle)
 				setAngle(self.ankleServoNum,-(currentAnkleAngle + newAnkleAngle))
 				
-				time.sleep(stepDelay)
-
+				enditer = datetime.now()
+				elapsed = enditer - startiter
+				elapsedTime = elapsed.microseconds / 1000000.0
+				if elapsedTime < stepDelay:
+					stepSleep = stepDelay -elapsedTime
+					time.sleep(stepSleep)
+				enditer2 = datetime.now()
+				elapsed2 = enditer2 - startiter
+				#print "Iteration took %s/%s ms sleep, expected %s ms" % (elapsed2.microseconds/1000.0, elapsedTime * 1000, stepDelay * 1000)
+			loopend = datetime.now()
+			loopelapsed = loopend - start
+			#print str(loopelapsed)
+		else:
+			print "Position (%s,%s) out of reach, ignoring" % (footX, footY)
 
 	def replantFoot(self,endHipAngle,stepTime=1, height=60):
 		runMovement(self.replantFoot_function, endHipAngle,stepTime, height)
@@ -226,8 +270,10 @@ class leg():
 		hipMaxDiff = float(endHipAngle - currentHipAngle)
 			
 		steps = range(int(stepPerS*stepTime))
-		stepDelay = 1/float(stepPerS * stepTime)
+		stepDelay = 1/float(stepPerS)
+		start = datetime.now()
 		for i,t in enumerate(steps):
+			startiter = datetime.now()
 	
 			#print "replantFoot %s:\ti: %s cur: %s end: %s max: %s" % (self.hipServoNum, i, currentHipAngle, endHipAngle, hipMaxDiff)
 			hipAngle = (hipMaxDiff/len(steps))*(i+1)
@@ -254,8 +300,18 @@ class leg():
 			hipAngle = currentHipAngle+hipAngle
 			setAngle(self.hipServoNum, hipAngle)
 			
-			#wait for next cycle
-			time.sleep(stepDelay)
+			enditer = datetime.now()
+			elapsed = enditer - startiter
+			elapsedTime = elapsed.microseconds / 1000000.0
+			if elapsedTime < stepDelay*0.9:
+				stepSleep = stepDelay -elapsedTime
+				time.sleep(stepSleep)
+			enditer2 = datetime.now()
+			elapsed2 = enditer2 - startiter
+		#print "Iteration took %s/%s ms sleep, expected %s ms" % (elapsed2.microseconds/1000.0, elapsedTime * 1000, stepDelay * 1000)
+		loopend = datetime.now()
+		loopelapsed = loopend - start
+		#print str(loopelapsed)
 
 
 def setAngle(channel, angle):
@@ -263,12 +319,12 @@ def setAngle(channel, angle):
 		#print "servoNum out of range: %s" % channel
 		return
 	
-	if angle < -92:
-		print "Angle smaller than -92: %s for channel %s" % (angle, channel)
-		angle = -92
-	if angle > 92:
-		print "Angle larger than 90: %s for channel %s" % (angle, channel)
-		angle = 92
+	if angle < -100:
+		#print "Angle smaller than -100: %s for channel %s" % (angle, channel)
+		angle = -100
+	if angle > 100:
+		#print "Angle larger than 90: %s for channel %s" % (angle, channel)
+		angle = 100
 	if angle == 0:
 		pwmvalue = servoCenter[channel]
 	if angle > 0:
@@ -299,7 +355,9 @@ def getAngle(channel):
 	else:
 		angle = 90.0*(servoCenter[channel] - pwmvalue)/float(servoCenter[channel] - servoMin[channel])
 	#print "%s: angle %s" % (channel, angle)
-	if (angle > -90) and (angle < 90):
-		return angle
-	else:
-		return 0
+	if (angle < -100):
+		angle = -100
+	if (angle > 100):
+		angle = 100
+	return angle
+
