@@ -64,7 +64,7 @@ class neck():
 		self.servoNum = servoNum
 
 	def set(self,deg):
-		setAngle(servoNum, deg)
+		setAngle(self.servoNum, deg)
 
 class leg():
 
