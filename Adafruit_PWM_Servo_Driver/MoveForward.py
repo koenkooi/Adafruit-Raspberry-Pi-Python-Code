@@ -6,17 +6,14 @@ hexy = hexapod()
 deg = 25
 midFloor = 30
 hipSwing = 25
-pause = 0.2
-steptime = 0.2
+pause = 0.6
+steptime = 0.5
 
 #tripod1 = RF,LM,RB
 #tripod2 = LF,RM,LB
 
-for leg in hexy.legs:
-	leg.setHipDeg(0)
-
 for timeStop in range(2):
-	#time.sleep(0.1)
+	time.sleep(0.1)
 	# replant tripod2 forward while tripod1 move behind
 	#   relpant tripod 2 forward
 	hexy.LF.replantFoot(deg-hipSwing,stepTime=steptime)
@@ -41,7 +38,3 @@ for timeStop in range(2):
 	hexy.LB.setHipDeg(-deg+hipSwing,stepTime=steptime)
 	time.sleep(pause)
 
-for leg in hexy.legs:
-	leg.hip("sleep")
-	leg.knee("sleep")
-	leg.ankle("sleep")

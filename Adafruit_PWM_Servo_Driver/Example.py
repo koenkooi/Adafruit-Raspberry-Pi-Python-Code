@@ -6,28 +6,44 @@ for hip in [12, 13, 14, 15]:
 
 hexy = hexapod()
 
-hexy.LF.setFootY(70)
-hexy.LM.setFootY(70)
-hexy.LB.setFootY(70)
-hexy.RB.setFootY(70)
-hexy.RM.setFootY(70)
-hexy.RF.setFootY(70)
 
+for leg in hexy.legs:
+	leg.setFootXY(40,30)
+
+time.sleep(3)
+
+for leg in hexy.legs:
+	leg.setFootXY(40,30, stepTime=2)
 
 time.sleep(2)
 
-setAngle(12,0)
+for leg in hexy.legs:
+	leg.setFootXY(40,40, stepTime=2)
 
-hexy.LF.setFootY(10)
-hexy.LM.setFootY(10)
-hexy.LB.setFootY(10)
-hexy.RB.setFootY(10)
-hexy.RM.setFootY(10)
-hexy.RF.setFootY(10)
-
-time.sleep(1)
+time.sleep(2)
 
 for leg in hexy.legs:
-	leg.hip("sleep")
-	leg.knee("sleep")
-	leg.ankle("sleep")
+   leg.setFootXY(40,50, stepTime=2)
+
+time.sleep(2)
+
+for leg in hexy.legs:
+	leg.setFootXY(40,60, stepTime=2)
+
+time.sleep(2)
+
+for leg in hexy.legs:
+	leg.setFootXY(40,70, stepTime=2)
+
+time.sleep(2)
+
+for leg in hexy.legs:
+	leg.setFootXY(40,80, stepTime=2)
+
+time.sleep(2)
+
+for leg in hexy.legs:
+	leg.setFootXY(40,90, stepTime=2)
+
+time.sleep(2)
+
