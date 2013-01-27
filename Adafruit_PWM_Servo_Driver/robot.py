@@ -5,19 +5,19 @@ import time
 import math
 import threading
 from datetime import datetime, timedelta
-
+import os.path
 
 # Controller at i2c address 0x40
 pwm = PWM(0x40, debug=False)
-#pwm2 = PWM(0x41, debug=False)
+pwm2 = PWM(0x41, debug=False)
 
 # Store offsets, cheap analog servos aren't that precise
-servoCenter = [410,430,395,360,390,370,370,380,380,360,390,400,480,370,380,370, 16, 17, 18]
-servoMin = [170,185,150,135,155,140,140,140,140,135,150,160,220,135,145,140, 16, 17, 18]
-servoMax = [650,660,650,620,640,620,640,630,640,610,635,635,670,630,645,645, 16, 17, 18]
+servoCenter = [410,430,395,360,390,370,370,380,380,360,390,400,480,370,380,370, 400, 400, 400]
+servoMin = [170,185,150,135,155,140,140,140,140,135,150,160,220,135,145,140, 150, 150, 150]
+servoMax = [650,660,650,620,640,620,640,630,640,610,635,635,670,630,645,645, 650, 650, 650]
 
 # Interpolation steps
-stepPerS = 10
+stepPerS = 16
 
 # Max height
 floor = 60
@@ -315,10 +315,6 @@ class leg():
 
 
 def setAngle(channel, angle):
-	if channel > 15:
-		#print "servoNum out of range: %s" % channel
-		return
-	
 	if angle < -100:
 		#print "Angle smaller than -100: %s for channel %s" % (angle, channel)
 		angle = -100
@@ -341,14 +337,10 @@ def setAngle(channel, angle):
 	lock.release()
 
 def getAngle(channel):
-	if channel > 15:
-		#print "servoNum out of range: %s" % channel
-		return 0
-
 	if channel < 16:
 		pwmvalue = pwm.getPWM(channel)
 	else:
-		pwmvalue = pwm2.getPWM(channel)
+		pwmvalue = pwm2.getPWM(channel - 16)
 			
 	if pwmvalue > servoCenter[channel]:
 		angle = 90.0*(pwmvalue - servoCenter[channel])/float(servoMax[channel] - servoCenter[channel])
@@ -360,4 +352,20 @@ def getAngle(channel):
 	if (angle > 100):
 		angle = 100
 	return angle
+
+# Board is rotated 90 degrees, so X and Y are swapped
+
+def rightSideUp():
+	iopath='/sys/devices/ocp.2/4819c000.i2c/i2c-1/1-0018/iio:device0'
+	if os.path.exists(iopath):
+		f = open(iopath + '/in_accel_z_raw','r')
+		accelZ=float(f.read()) 
+		f.close
+		if accelZ < -500:
+			return 0
+			print "Upside down!"
+		else:
+			return 1
+	else:
+		return 1
 
