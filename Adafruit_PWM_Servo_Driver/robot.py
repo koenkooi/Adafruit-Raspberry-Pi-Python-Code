@@ -22,6 +22,8 @@ stepPerS = 16
 # Max height
 floor = 60
 
+upsidedown = 0;
+
 # leg dimensions
 legLength = 48.0
 footLength = 51.0
@@ -315,6 +317,8 @@ class leg():
 
 
 def setAngle(channel, angle):
+	if upsidedown > 0:
+		angle = -angle
 	if angle < -100:
 		#print "Angle smaller than -100: %s for channel %s" % (angle, channel)
 		angle = -100
@@ -351,7 +355,10 @@ def getAngle(channel):
 		angle = -100
 	if (angle > 100):
 		angle = 100
-	return angle
+	if upsidedown < 1:
+		return angle
+	else:
+		return -angle
 
 # Board is rotated 90 degrees, so X and Y are swapped
 
@@ -362,10 +369,13 @@ def rightSideUp():
 		accelZ=float(f.read()) 
 		f.close
 		if accelZ < -500:
-			return 0
 			print "Upside down!"
+			upsidedown = 1
+			return 0
 		else:
+			upsidedown = 0
 			return 1
 	else:
+		upsidedown = 0
 		return 1
 
