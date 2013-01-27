@@ -22,7 +22,8 @@ stepPerS = 16
 # Max height
 floor = 60
 
-upsidedown = 0;
+global upsidedown
+upsidedown = 2
 
 # leg dimensions
 legLength = 48.0
@@ -61,6 +62,8 @@ class hexapod():
 		self.tripod1 = [self.RF,self.RB,self.LM]
 		self.tripod2 = [self.LF,self.LB,self.RM]
 
+		self.orientation = 0
+
 class neck():
 	def __init__(self,servoNum):
 		self.servoNum = servoNum
@@ -98,6 +101,7 @@ class leg():
 		runMovement(self.setHipDeg_function, endHipAngle,stepTime)
 		
 	def setHipDeg_function(self,endHipAngle,stepTime):
+		getOrientation()
 		#print "endHipAngle: %s,servoNum: %s" % (endHipAngle, self.hipServoNum)
 		
 		'''
@@ -144,7 +148,10 @@ class leg():
 		# TODO: max steptime dependent
 		# TODO: implement time-movements the servo commands sent for far fewer
 		#       total servo commands
-		
+	
+		# Check orientation
+		getOrientation()
+
 		#print "footY: %s" % footY
 		if (footY < 75) and (footY > -75):
 
@@ -190,6 +197,7 @@ class leg():
 		runMovement(self.setFootXY_function, footX, footY, stepTime)
 
 	def setFootXY_function(self,footX, footY,stepTime):
+		getOrientation()
 		if math.sqrt(footX*footX + footY*footY) < (footLength + legLength):
 
 			try:
@@ -362,14 +370,15 @@ def getAngle(channel):
 
 # Board is rotated 90 degrees, so X and Y are swapped
 
-def rightSideUp():
+def getOrientation():
+	global upsidedown
 	iopath='/sys/devices/ocp.2/4819c000.i2c/i2c-1/1-0018/iio:device0'
 	if os.path.exists(iopath):
 		f = open(iopath + '/in_accel_z_raw','r')
 		accelZ=float(f.read()) 
 		f.close
 		if accelZ < -500:
-			print "Upside down!"
+			#print "Upside down!"
 			upsidedown = 1
 			return 0
 		else:
