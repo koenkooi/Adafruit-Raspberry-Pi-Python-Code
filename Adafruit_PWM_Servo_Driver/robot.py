@@ -163,9 +163,11 @@ class leg():
 			kneeAngle = math.degrees(math.asin(float(footY)/75.0))
 			ankleAngle = 90.0-kneeAngle
 
+
 			if stepTime > (2/float(stepPerS)):
 				kneeDiff = float(kneeAngle - currentKneeAngle)
 				ankleDiff = float(ankleAngle - currentAnkleAngle)
+				#print "setFootY: cKa: %s \tcAa: %s \tkA: %s \taA: %s \tkD: %s" % (currentKneeAngle, currentAnkleAngle, kneeAngle, ankleAngle, kneeDiff)
 
 				steps = range(int(stepPerS*stepTime))
 				stepDelay = 1/float(stepPerS)
@@ -371,6 +373,9 @@ def getAngle(channel):
 # Board is rotated 90 degrees, so X and Y are swapped
 
 def getOrientation():
+	runMovement(getOrientation_function)
+
+def getOrientation_function():
 	global upsidedown
 	iopath='/sys/devices/ocp.2/4819c000.i2c/i2c-1/1-0018/iio:device0'
 	if os.path.exists(iopath):
