@@ -12,7 +12,7 @@ pwm = PWM(0x40, debug=False)
 pwm2 = PWM(0x41, debug=False)
 
 # Store offsets, cheap analog servos aren't that precise
-servoCenter = [410,430,395,360,390,370,370,380,380,360,390,400,480,370,380,370, 400, 400, 400]
+servoCenter = [320,350,365,380,320,360,385,350,340,350,270,355,390,390,380,380, 380, 390, 400]
 servoMin = [170,185,150,135,155,140,140,140,140,135,150,160,220,135,145,140, 150, 150, 150]
 servoMax = [650,660,650,620,640,620,640,630,640,610,635,635,670,630,645,645, 650, 650, 650]
 
@@ -255,6 +255,31 @@ class leg():
 		else:
 			print "Position (%s,%s) out of reach, ignoring" % (footX, footY)
 
+	def setRoll(self,rollDeg,stepTime=1, height=60):
+		runMovement(self.setRoll_function, rollDeg,stepTime, height)
+
+	def setRoll_function(self,rollDeg,stepTime, height):
+		print "setRoll: Implement me"
+		hexy.RB.setHipDeg(20)
+		hexy.LB.setHipDeg(-20)
+		hexy.RF.setHipDeg(-20)
+		hexy.LF.setHipDeg(20)
+		for leg in hexy.legs:
+			leg.setFootXY(30, height, stepTime=0.1)
+
+	def setPitch(self,pitchDeg,stepTime=1, height=60):
+		runMovement(self.setPitch_function, pitchDeg,stepTime, height)
+
+	def setPitch_function(self,pitchDeg,stepTime, height):
+		print "setPitch: Implement me"
+		# 12cm leg spacing
+		hexy.RB.setHipDeg(20)
+		hexy.LB.setHipDeg(-20)
+		hexy.RF.setHipDeg(-20)
+		hexy.LF.setHipDeg(20)
+		for leg in hexy.legs:
+			leg.setFootXY(30, height, stepTime=0.1)
+
 	def replantFoot(self,endHipAngle,stepTime=1, height=60):
 		runMovement(self.replantFoot_function, endHipAngle,stepTime, height)
 		
@@ -329,12 +354,12 @@ class leg():
 def setAngle(channel, angle):
 	if upsidedown > 0:
 		angle = -angle
-	if angle < -100:
-		#print "Angle smaller than -100: %s for channel %s" % (angle, channel)
-		angle = -100
-	if angle > 100:
-		#print "Angle larger than 90: %s for channel %s" % (angle, channel)
-		angle = 100
+	if angle < -92:
+		#print "Angle smaller than -92: %s for channel %s" % (angle, channel)
+		angle = -92
+	if angle > 92:
+		#print "Angle larger than 92: %s for channel %s" % (angle, channel)
+		angle = 92
 	if angle == 0:
 		pwmvalue = servoCenter[channel]
 	if angle > 0:
