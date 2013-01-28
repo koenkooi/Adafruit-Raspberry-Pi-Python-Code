@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import time
 from robot import hexapod,setAngle
 
@@ -6,8 +8,8 @@ hexy = hexapod()
 deg = 25
 midFloor = 30
 hipSwing = 25
-pause = 0.6
 steptime = 0.5
+pause = steptime + 0.2
 
 #tripod1 = RF,LM,RB
 #tripod2 = LF,RM,LB
