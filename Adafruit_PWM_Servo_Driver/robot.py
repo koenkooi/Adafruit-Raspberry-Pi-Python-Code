@@ -31,6 +31,9 @@ footLength = 51.0
 
 # Set frequency to 60 Hz, max for servos
 pwm.setPWMFreq(60)
+pwm2.setPWMFreq(60)
+
+
 
 lock = threading.Lock()
 
@@ -97,49 +100,49 @@ class leg():
 		else:
 			setAngle(self.ankleServoNum, deg)
 
-	def setHipDeg(self,endHipAngle,stepTime=1):
+	def setHipDeg(self,endHipAngle,stepTime=0.1):
 		runMovement(self.setHipDeg_function, endHipAngle,stepTime)
 		
 	def setHipDeg_function(self,endHipAngle,stepTime):
 		getOrientation()
 		#print "endHipAngle: %s,servoNum: %s" % (endHipAngle, self.hipServoNum)
 		
-		'''
-		# Non-interpolated version
-		setAngle(self.hipServoNum, endHipAngle)
-		time.sleep(stepTime)
-		'''
+		if stepTime < (2/float(stepPerS)):
+			# Non-interpolated version
+			setAngle(self.hipServoNum, endHipAngle)
+			time.sleep(stepTime)
+		else:
+
+			lock.acquire()
+			currentHipAngle = getAngle(self.hipServoNum)
+			lock.release()
 		
-		lock.acquire()
-		currentHipAngle = getAngle(self.hipServoNum)
-		lock.release()
+			hipMaxDiff = float(endHipAngle-currentHipAngle)
 		
-		hipMaxDiff = float(endHipAngle-currentHipAngle)
-		
-		steps = range(int(stepPerS*stepTime))
-		stepDelay = 1/float(stepPerS)
-		for i,t in enumerate(steps):
-			startiter = datetime.now()
-			# TODO: implement time-movements the servo commands sent for far fewer
-			#       total servo commands
-			hipAngle = (hipMaxDiff/len(steps))*(i+1)
-			try:
-				anglNorm=hipAngle*(180/(hipMaxDiff))
-			except:
-				anglNorm=hipAngle*(180/(1.0))
-			hipAngle = currentHipAngle+hipAngle
-			setAngle(self.hipServoNum, hipAngle)
+			steps = range(int(stepPerS*stepTime))
+			stepDelay = 1/float(stepPerS)
+			for i,t in enumerate(steps):
+				startiter = datetime.now()
+				# TODO: implement time-movements the servo commands sent for far fewer
+				#       total servo commands
+				hipAngle = (hipMaxDiff/len(steps))*(i+1)
+				try:
+					anglNorm=hipAngle*(180/(hipMaxDiff))
+				except:
+					anglNorm=hipAngle*(180/(1.0))
+				hipAngle = currentHipAngle+hipAngle
+				setAngle(self.hipServoNum, hipAngle)
 			
-			#wait for next cycle
-			enditer = datetime.now()
-			elapsed = enditer - startiter
-			elapsedTime = elapsed.microseconds / 1000000.0
-			if elapsedTime < stepDelay*0.9:
-				stepSleep = stepDelay -elapsedTime
-				time.sleep(stepSleep)
-			enditer2 = datetime.now()
-			elapsed2 = enditer2 - startiter
-			#print "Iteration took %s/%s ms sleep, expected %s ms" % (elapsed2.microseconds/1000.0, elapsedTime * 1000, stepDelay * 1000)
+				#wait for next cycle
+				enditer = datetime.now()
+				elapsed = enditer - startiter
+				elapsedTime = elapsed.microseconds / 1000000.0
+				if elapsedTime < stepDelay*0.9:
+					stepSleep = stepDelay -elapsedTime
+					time.sleep(stepSleep)
+				enditer2 = datetime.now()
+				elapsed2 = enditer2 - startiter
+				#print "Iteration took %s/%s ms sleep, expected %s ms" % (elapsed2.microseconds/1000.0, elapsedTime * 1000, stepDelay * 1000)
 
 	def setFootY(self,footY,stepTime=0.2):
 		runMovement(self.setFootY_function, footY,stepTime)
@@ -398,9 +401,6 @@ def getAngle(channel):
 # Board is rotated 90 degrees, so X and Y are swapped
 
 def getOrientation():
-	runMovement(getOrientation_function)
-
-def getOrientation_function():
 	global upsidedown
 	iopath='/sys/devices/ocp.2/4819c000.i2c/i2c-1/1-0019/iio:device0'
 	if os.path.exists(iopath):
@@ -408,7 +408,7 @@ def getOrientation_function():
 		accelZ=float(f.read()) 
 		f.close
 		if accelZ > 500:
-			#print "Upside down!"
+			print "Upside down! Zaccel: %s" % accelZ
 			upsidedown = 1
 			return 0
 		else:
