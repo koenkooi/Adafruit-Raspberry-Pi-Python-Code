@@ -407,7 +407,7 @@ def getOrientation():
 		f = open(iopath + '/in_accel_z_raw','r')
 		accelZ=float(f.read()) 
 		f.close
-		if accelZ > 500:
+		if accelZ < -500:
 			print "Upside down! Zaccel: %s" % accelZ
 			upsidedown = 1
 			return 0
