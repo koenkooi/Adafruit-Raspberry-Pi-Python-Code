@@ -33,7 +33,9 @@ time.sleep(0.5)
 
 #zero hips
 for leg in hexy.legs:
-    leg.hip(0)
+    leg.setHipDeg(10)
+
+time.sleep(1)
 
 #kill all servos
 #hexy.con.killAll()
