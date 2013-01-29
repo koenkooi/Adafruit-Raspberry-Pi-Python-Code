@@ -421,3 +421,51 @@ def getOrientation_function():
 		upsidedown = 0
 		return 1
 
+def getHeading():
+	runMovement(getHeading_function)
+
+def getHeading_function():
+	global heading
+
+	iopath='/sys/devices/ocp.2/4819c000.i2c/i2c-1/1-0019/iio:device0'
+	if os.path.exists(iopath):
+		f = open(iopath + '/in_accel_x_raw','r')
+		accelY=float(f.read())/1000.0 
+		f.close
+		f = open(iopath + '/in_accel_y_raw','r')
+		accelX=float(f.read())/1000.0
+		f.close
+		f = open(iopath + '/in_accel_z_raw','r')
+		accelZ=float(f.read())/1000.0 
+		f.close
+	
+
+	pitch = math.asin(-accelX)
+	roll = math.asin((accelY)/math.cos(pitch));
+
+	iopath='/sys/devices/ocp.2/4819c000.i2c/i2c-1/1-001e/iio:device1'
+	if os.path.exists(iopath):
+		f = open(iopath + '/in_magn_x_raw','r')
+		magX=float(f.read())/1000.0
+		f.close
+		f = open(iopath + '/in_magn_y_raw','r')
+		magY=float(f.read())/1000.0
+		f.close
+		f = open(iopath + '/in_magn_z_raw','r')
+		magZ=float(f.read())/1000.0
+		f.close
+
+		bogoheading = math.degrees(math.atan2(magY, magX))
+		if bogoheading <0:
+ 			bogoheading += 360;
+
+ 		xh = magX * math.cos(pitch) + magZ * math.sin(pitch);
+		yh = magX * math.sin(roll) * math.sin(pitch) + magY * math.cos(roll) - magZ * math.sin(roll) * math.cos(pitch);
+		zh = -magX * math.cos(roll) * math.sin(pitch) + magY * math.sin(roll) + magZ * math.cos(roll) * math.cos(pitch);
+
+		heading = math.degrees(math.atan2(xh, yh))
+		if yh < 0:
+			heading = 360 + heading;
+	else:
+		heading = 1
+
