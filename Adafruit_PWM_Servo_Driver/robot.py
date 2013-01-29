@@ -401,6 +401,9 @@ def getAngle(channel):
 # Board is rotated 90 degrees, so X and Y are swapped
 
 def getOrientation():
+	runMovement(getOrientation_function)
+
+def getOrientation_function():
 	global upsidedown
 	iopath='/sys/devices/ocp.2/4819c000.i2c/i2c-1/1-0019/iio:device0'
 	if os.path.exists(iopath):
