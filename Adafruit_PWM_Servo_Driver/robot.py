@@ -402,12 +402,12 @@ def getOrientation():
 
 def getOrientation_function():
 	global upsidedown
-	iopath='/sys/devices/ocp.2/4819c000.i2c/i2c-1/1-0018/iio:device0'
+	iopath='/sys/devices/ocp.2/4819c000.i2c/i2c-1/1-0019/iio:device0/in_accel_z_raw'
 	if os.path.exists(iopath):
 		f = open(iopath + '/in_accel_z_raw','r')
 		accelZ=float(f.read()) 
 		f.close
-		if accelZ < -500:
+		if accelZ > 500:
 			#print "Upside down!"
 			upsidedown = 1
 			return 0
