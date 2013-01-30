@@ -3,6 +3,7 @@
 from Adafruit_PWM_Servo_Driver import PWM
 import time
 import math
+import numpy
 import threading
 from datetime import datetime, timedelta
 import os.path
@@ -12,22 +13,22 @@ pwm = PWM(0x40, debug=False)
 pwm2 = PWM(0x41, debug=False)
 
 # Store offsets, cheap analog servos aren't that precise
-servoCenter = [320,350,365,380,320,360,385,350,340,350,270,355,390,390,380,380, 380, 390, 400]
-servoMin = [130,135,138,135,138,135,155,133,135,135,132,135,220,135,145,140, 150, 150, 150]
-servoMax = [585,625,635,625,612,625,645,610,605,610,575,625,670,630,645,645, 650, 650, 650]
+servoCenter = [320,350,365,380,320,360,385,350,340,350,270,355,390,390,380,380, 380, 390, 450]
+servoMin = [130,135,138,135,138,135,155,133,135,135,132,135,220,135,145,140, 150, 150, 200]
+servoMax = [585,625,635,625,612,625,645,610,605,610,575,625,670,630,645,645, 650, 650, 690]
 
 # Interpolation steps
 stepPerS = 16
 
 # Max height
-floor = 60
+floor = 70
 
 global upsidedown
 upsidedown = 2
 
 # leg dimensions
 legLength = 48.0
-footLength = 51.0
+footLength = 58.0
 
 # Set frequency to 60 Hz, max for servos
 pwm.setPWMFreq(60)
@@ -203,7 +204,7 @@ class leg():
 
 	def setFootXY_function(self,footX, footY,stepTime):
 		getOrientation()
-		if math.sqrt(footX*footX + footY*footY) < (footLength + legLength):
+		if footY < (footLength + legLength):
 
 			try:
 				d = math.sqrt(footX*footX+footY*footY)
@@ -410,7 +411,7 @@ def getOrientation_function():
 		f = open(iopath + '/in_accel_z_raw','r')
 		accelZ=float(f.read()) 
 		f.close
-		if accelZ < -500:
+		if accelZ < -800 and accelZ > -1100:
 			print "Upside down! Zaccel: %s" % accelZ
 			upsidedown = 1
 			return 0
