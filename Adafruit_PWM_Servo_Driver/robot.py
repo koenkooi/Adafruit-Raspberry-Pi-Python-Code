@@ -195,7 +195,7 @@ class leg():
 		getOrientation()
 
 		#print "footY: %s" % footY
-		if (footY < 75) and (footY > -75):
+		if (footY < 85) and (footY > -85):
 
 			lock.acquire()
 			currentKneeAngle = getAngle(self.kneeServoNum)
@@ -298,7 +298,7 @@ class leg():
 			print "Position (%s,%s) out of reach, ignoring" % (footX, footY)
 
 
-	def replantFoot(self,endHipAngle,stepTime=1, height=60):
+	def replantFoot(self,endHipAngle,stepTime=1, height=75):
 		runMovement(self.replantFoot_function, endHipAngle,stepTime, height)
 		
 	def replantFoot_function(self,endHipAngle,stepTime, height):
@@ -306,68 +306,68 @@ class leg():
 		# TODO: implement time-movements the servo commands sent for far fewer total servo
 		#       commands
 		
-		'''
-		# Non-interpolated version
-		# Raise boot to max
-		self.setFootY(0,stepTime=0)
-		# Rotate hip
-		setAngle(self.hipServoNum, endHipAngle)
-		# sleep a bit to adhere to steptime param
-		time.sleep(stepTime/2)
-		# Lower foot to height
-		self.setFootY(height,stepTime=0)
-		'''
 
-		lock.acquire()
-		currentHipAngle = getAngle(self.hipServoNum)
-		lock.release()
+		if stepTime < (2/float(stepPerS)):
+			# Non-interpolated version
+			# Raise boot to max
+			self.setFootY(0,stepTime=0.1)
+			# Rotate hip
+			setAngle(self.hipServoNum, endHipAngle)
+			# sleep a bit to adhere to steptime param
+			time.sleep(stepTime/2)
+			# Lower foot to height
+			self.setFootY(height,stepTime=0.1)
+
+		else:
+			lock.acquire()
+			currentHipAngle = getAngle(self.hipServoNum)
+			lock.release()
 		
-		hipMaxDiff = float(endHipAngle - currentHipAngle)
+			hipMaxDiff = float(endHipAngle - currentHipAngle)
 			
-		steps = range(int(stepPerS*stepTime))
-		stepDelay = 1/float(stepPerS)
-		start = datetime.now()
-		for i,t in enumerate(steps):
-			startiter = datetime.now()
+			steps = range(int(stepPerS*stepTime))
+			stepDelay = 1/float(stepPerS)
+			start = datetime.now()
+			for i,t in enumerate(steps):
+				startiter = datetime.now()
 	
-			#print "replantFoot %s:\ti: %s cur: %s end: %s max: %s" % (self.hipServoNum, i, currentHipAngle, endHipAngle, hipMaxDiff)
-			hipAngle = (hipMaxDiff/len(steps))*(i+1)
-			#print "hip angle calc'd:",hipAngle
+				#print "replantFoot %s:\ti: %s cur: %s end: %s max: %s" % (self.hipServoNum, i, currentHipAngle, endHipAngle, hipMaxDiff)
+				hipAngle = (hipMaxDiff/len(steps))*(i+1)
+				#print "hip angle calc'd:",hipAngle
 			
-			#calculate the absolute distance between the foot's highest and lowest point
-			footMax = 0
-			footMin = height
-			footRange = abs(footMax-footMin)
+				#calculate the absolute distance between the foot's highest and lowest point
+				footMax = 0
+				footMin = height
+				footRange = abs(footMax-footMin)
 			
-			#normalize the range of the hip movement to 180 deg
-			try:
-				anglNorm=hipAngle*(180/(hipMaxDiff))
-			except:
-				anglNorm=hipAngle*(180/(1.0))
-			#print "normalized angle:",anglNorm
+				#normalize the range of the hip movement to 180 deg
+				try:
+					anglNorm=hipAngle*(180/(hipMaxDiff))
+				except:
+					anglNorm=hipAngle*(180/(1.0))
+				#print "normalized angle:",anglNorm
 			
-			#base footfall on a sin pattern from footfall to footfall with 0 as the midpoint
-			footY = footMin-math.sin(math.radians(anglNorm))*footRange
-			#print "calculated footY",footY
+				#base footfall on a sin pattern from footfall to footfall with 0 as the midpoint
+				footY = footMin-math.sin(math.radians(anglNorm))*footRange
+				#print "calculated footY",footY
 			
-			#set foot height
-			self.setFootY(footY,stepTime=0)
-			hipAngle = currentHipAngle+hipAngle
-			setAngle(self.hipServoNum, hipAngle)
+				#set foot height
+				self.setFootY(footY,stepTime=0)
+				hipAngle = currentHipAngle+hipAngle
+				setAngle(self.hipServoNum, hipAngle)
 			
-			enditer = datetime.now()
-			elapsed = enditer - startiter
-			elapsedTime = elapsed.microseconds / 1000000.0
-			if elapsedTime < stepDelay*0.9:
-				stepSleep = stepDelay -elapsedTime
-				time.sleep(stepSleep)
-			enditer2 = datetime.now()
-			elapsed2 = enditer2 - startiter
-		#print "Iteration took %s/%s ms sleep, expected %s ms" % (elapsed2.microseconds/1000.0, elapsedTime * 1000, stepDelay * 1000)
-		loopend = datetime.now()
-		loopelapsed = loopend - start
-		#print str(loopelapsed)
-
+				enditer = datetime.now()
+				elapsed = enditer - startiter
+				elapsedTime = elapsed.microseconds / 1000000.0
+				if elapsedTime < stepDelay*0.9:
+					stepSleep = stepDelay -elapsedTime
+					time.sleep(stepSleep)
+				enditer2 = datetime.now()
+				elapsed2 = enditer2 - startiter
+			#print "Iteration took %s/%s ms sleep, expected %s ms" % (elapsed2.microseconds/1000.0, elapsedTime * 1000, stepDelay * 1000)
+			loopend = datetime.now()
+			loopelapsed = loopend - start
+			#print str(loopelapsed)
 
 def setAngle(channel, angle):
 	if upsidedown > 0:
