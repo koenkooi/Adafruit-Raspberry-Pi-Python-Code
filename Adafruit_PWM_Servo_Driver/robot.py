@@ -26,6 +26,9 @@ floor = 70
 global upsidedown
 upsidedown = 2
 
+global heading
+heading = 0
+
 # leg dimensions
 legLength = 48.0
 footLength = 58.0
@@ -67,6 +70,41 @@ class hexapod():
 		self.tripod2 = [self.LF,self.LB,self.RM]
 
 		self.orientation = 0
+
+	def setRoll(self,rollDeg,stepTime=1, height=60):
+		runMovement(self.setRoll_function, rollDeg,stepTime, height)
+
+	def setRoll_function(self,rollDeg,stepTime, height):
+		print "setRoll: Implement me"
+		self.RB.setHipDeg(20)
+		self.LB.setHipDeg(-20)
+		self.RF.setHipDeg(-20)
+		self.LF.setHipDeg(20)
+		for leg in self.legs:
+			leg.setFootXY(30, height, stepTime=0.1)
+
+	def setPitch(self,pitchDeg,stepTime=1, height=60):
+		runMovement(self.setPitch_function, pitchDeg,stepTime, height)
+
+	def setPitch_function(self,pitchDeg,stepTimes, height):
+		# 12cm leg spacing
+		self.RB.setHipDeg(-20)
+		self.LB.setHipDeg(20)
+		self.RF.setHipDeg(20)
+		self.LF.setHipDeg(-20)
+		self.LM.setHipDeg(0)
+		self.RM.setHipDeg(0)
+
+		time.sleep(0.1)
+
+		tiltdiff = 260.0 * math.tan(math.radians(pitchDeg))
+
+		self.RF.setFootXY(10, 105, stepTime=stepTimes)
+		self.RM.setFootXY(35, 105 - tiltdiff/2, stepTime=stepTimes)
+		self.RB.setFootXY(50, 105 - tiltdiff, stepTime=stepTimes)
+		self.LF.setFootXY(10, 105, stepTime=0.1)
+		self.LM.setFootXY(35, 105 - tiltdiff/2, stepTime=stepTimes)
+		self.LB.setFootXY(50, 105 - tiltdiff, stepTime=stepTimes)
 
 class neck():
 	def __init__(self,servoNum):
@@ -259,30 +297,6 @@ class leg():
 		else:
 			print "Position (%s,%s) out of reach, ignoring" % (footX, footY)
 
-	def setRoll(self,rollDeg,stepTime=1, height=60):
-		runMovement(self.setRoll_function, rollDeg,stepTime, height)
-
-	def setRoll_function(self,rollDeg,stepTime, height):
-		print "setRoll: Implement me"
-		hexy.RB.setHipDeg(20)
-		hexy.LB.setHipDeg(-20)
-		hexy.RF.setHipDeg(-20)
-		hexy.LF.setHipDeg(20)
-		for leg in hexy.legs:
-			leg.setFootXY(30, height, stepTime=0.1)
-
-	def setPitch(self,pitchDeg,stepTime=1, height=60):
-		runMovement(self.setPitch_function, pitchDeg,stepTime, height)
-
-	def setPitch_function(self,pitchDeg,stepTime, height):
-		print "setPitch: Implement me"
-		# 12cm leg spacing
-		hexy.RB.setHipDeg(20)
-		hexy.LB.setHipDeg(-20)
-		hexy.RF.setHipDeg(-20)
-		hexy.LF.setHipDeg(20)
-		for leg in hexy.legs:
-			leg.setFootXY(30, height, stepTime=0.1)
 
 	def replantFoot(self,endHipAngle,stepTime=1, height=60):
 		runMovement(self.replantFoot_function, endHipAngle,stepTime, height)
@@ -431,10 +445,10 @@ def getHeading_function():
 	iopath='/sys/devices/ocp.2/4819c000.i2c/i2c-1/1-0019/iio:device0'
 	if os.path.exists(iopath):
 		f = open(iopath + '/in_accel_x_raw','r')
-		accelY=float(f.read())/1000.0 
+		accelX=float(f.read())/1000.0 
 		f.close
 		f = open(iopath + '/in_accel_y_raw','r')
-		accelX=float(f.read())/1000.0
+		accelY=float(f.read())/1000.0
 		f.close
 		f = open(iopath + '/in_accel_z_raw','r')
 		accelZ=float(f.read())/1000.0 
@@ -443,6 +457,8 @@ def getHeading_function():
 
 	pitch = math.asin(-accelX)
 	roll = math.asin((accelY)/math.cos(pitch));
+
+	print "Pitch: %s degrees, Roll: %s degrees" % (math.degrees(pitch), math.degrees(roll))
 
 	iopath='/sys/devices/ocp.2/4819c000.i2c/i2c-1/1-001e/iio:device1'
 	if os.path.exists(iopath):
