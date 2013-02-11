@@ -5,16 +5,16 @@ from robot import hexapod,setAngle
 
 hexy = hexapod()
 
-deg = 27
+deg = 25
 midFloor = 30
-hipSwing = 27
-steptime = 0.5
+hipSwing = 25
+steptime = 0.8
 pause = steptime + 0.4
 
 #tripod1 = RF,LM,RB
 #tripod2 = LF,RM,LB
 
-for timeStop in range(2):
+for timeStop in range(8):
 	time.sleep(0.1)
 	# replant tripod2 forward while tripod1 move behind
 	#   relpant tripod 2 forward
@@ -40,3 +40,5 @@ for timeStop in range(2):
 	hexy.LB.setHipDeg(-deg+hipSwing,stepTime=steptime)
 	time.sleep(pause)
 
+time.sleep(1)
+hexy.setPitch(10,0.1,95)

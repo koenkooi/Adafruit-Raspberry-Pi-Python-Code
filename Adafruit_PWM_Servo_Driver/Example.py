@@ -10,40 +10,40 @@ hexy = hexapod()
 for leg in hexy.legs:
 	leg.setFootXY(40,30)
 
-time.sleep(3)
+time.sleep(0.5)
 
 for leg in hexy.legs:
-	leg.setFootXY(40,30, stepTime=2)
+	leg.setFootXY(40,30, stepTime=0.5)
 
-time.sleep(2)
-
-for leg in hexy.legs:
-	leg.setFootXY(40,40, stepTime=2)
-
-time.sleep(2)
+time.sleep(0.6)
 
 for leg in hexy.legs:
-   leg.setFootXY(40,50, stepTime=2)
+	leg.setFootXY(40,40, stepTime=0.5)
 
-time.sleep(2)
-
-for leg in hexy.legs:
-	leg.setFootXY(40,60, stepTime=2)
-
-time.sleep(2)
+time.sleep(0.6)
 
 for leg in hexy.legs:
-	leg.setFootXY(40,70, stepTime=2)
+   leg.setFootXY(40,50, stepTime=0.5)
 
-time.sleep(2)
-
-for leg in hexy.legs:
-	leg.setFootXY(40,80, stepTime=2)
-
-time.sleep(2)
+time.sleep(0.6)
 
 for leg in hexy.legs:
-	leg.setFootXY(40,90, stepTime=2)
+	leg.setFootXY(40,60, stepTime=0.5)
 
-time.sleep(2)
+time.sleep(0.6)
+
+for leg in hexy.legs:
+	leg.setFootXY(40,70, stepTime=0.5)
+
+time.sleep(0.6)
+
+for leg in hexy.legs:
+	leg.setFootXY(40,80, stepTime=0.5)
+
+time.sleep(0.6)
+
+for leg in hexy.legs:
+	leg.setFootXY(40,90, stepTime=0.5)
+
+time.sleep(0.6)
 

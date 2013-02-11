@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import time
 from robot import hexapod,setAngle
 floor = 60

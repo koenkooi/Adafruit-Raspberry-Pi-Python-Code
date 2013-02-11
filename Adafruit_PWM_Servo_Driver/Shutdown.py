@@ -15,9 +15,9 @@ hexy.neck.set(r_angle)
 
 #bring hexy down low; don't want to belly (smack) flop
 for leg in hexy.legs:
-    leg.setFootY(deg)
+    leg.setFootY(deg, stepTime=1)
 
-time.sleep(0.5)
+time.sleep(1)
 
 #point feet up
 for leg in hexy.legs:

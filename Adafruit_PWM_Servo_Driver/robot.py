@@ -88,12 +88,21 @@ class hexapod():
 
 	def setPitch_function(self,pitchDeg,stepTimes, height):
 		# 12cm leg spacing
-		self.RB.setHipDeg(-20)
-		self.LB.setHipDeg(20)
-		self.RF.setHipDeg(20)
-		self.LF.setHipDeg(-20)
-		self.LM.setHipDeg(0)
-		self.RM.setHipDeg(0)
+
+		if pitchDeg > 14:
+			self.RB.setHipDeg(-20)
+			self.LB.setHipDeg(20)
+			self.RF.setHipDeg(-10)
+			self.LF.setHipDeg(10)
+			self.LM.setHipDeg(-5)
+			self.RM.setHipDeg(5)
+		else:
+			self.RB.setHipDeg(-20)
+			self.LB.setHipDeg(20)
+			self.RF.setHipDeg(20)
+			self.LF.setHipDeg(-20)
+			self.LM.setHipDeg(0)
+			self.RM.setHipDeg(0)
 
 		time.sleep(0.1)
 
@@ -298,7 +307,7 @@ class leg():
 			print "Position (%s,%s) out of reach, ignoring" % (footX, footY)
 
 
-	def replantFoot(self,endHipAngle,stepTime=1, height=75):
+	def replantFoot(self,endHipAngle,stepTime=1, height=72):
 		runMovement(self.replantFoot_function, endHipAngle,stepTime, height)
 		
 	def replantFoot_function(self,endHipAngle,stepTime, height):
@@ -425,7 +434,10 @@ def getOrientation_function():
 		f = open(iopath + '/in_accel_z_raw','r')
 		accelZ=float(f.read()) 
 		f.close
-		if accelZ < -800 and accelZ > -1100:
+		f = open(iopath + '/in_accel_x_raw','r')
+		accelX=float(f.read()) 
+		f.close
+		if accelZ < -800 and accelZ > -1100 and abs(accelX) < 200:
 			print "Upside down! Zaccel: %s" % accelZ
 			upsidedown = 1
 			return 0
@@ -444,14 +456,19 @@ def getHeading_function():
 
 	iopath='/sys/devices/ocp.2/4819c000.i2c/i2c-1/1-0019/iio:device0'
 	if os.path.exists(iopath):
+		# Dummy read to kick IIO to refresh sysfs
 		f = open(iopath + '/in_accel_x_raw','r')
-		accelX=float(f.read())/1000.0 
+		accelX=float(f.read())/1000.0
+		f.close
+		
+		f = open(iopath + '/in_accel_x_raw','r')
+		accelX=float(f.read())/1000.0
 		f.close
 		f = open(iopath + '/in_accel_y_raw','r')
 		accelY=float(f.read())/1000.0
 		f.close
 		f = open(iopath + '/in_accel_z_raw','r')
-		accelZ=float(f.read())/1000.0 
+		accelZ=float(f.read())/1000.0
 		f.close
 	
 
