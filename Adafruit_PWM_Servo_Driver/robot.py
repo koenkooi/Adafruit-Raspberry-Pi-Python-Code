@@ -7,6 +7,7 @@ import numpy
 import threading
 from datetime import datetime, timedelta
 import os.path
+import glob
 
 # Controller at i2c address 0x40
 pwm = PWM(0x40, debug=False)
@@ -429,15 +430,36 @@ def getOrientation():
 
 def getOrientation_function():
 	global upsidedown
-	iopath='/sys/devices/ocp.2/4819c000.i2c/i2c-1/1-0019/iio:device0'
+	iopath=glob.glob('/sys/devices/ocp.2/4819c000.i2c/i2c-1/1-0019/iio:device*')[0]
+
+	time.sleep(0.1)
+
 	if os.path.exists(iopath):
+		f = open(iopath + '/sampling_frequency','w')
+		f.write("200")
+		f.close
+
 		f = open(iopath + '/in_accel_z_raw','r')
 		accelZ=float(f.read()) 
 		f.close
+
+		f = open(iopath + '/in_accel_y_raw','r')
+		accelY=float(f.read()) 
+		f.close
+
 		f = open(iopath + '/in_accel_x_raw','r')
 		accelX=float(f.read()) 
 		f.close
-		if accelZ < -800 and accelZ > -1100 and abs(accelX) < 200:
+
+		# Normalize values:
+		vnorm = math.sqrt(accelX*accelX + accelY*accelY + accelZ*accelZ)
+		accelXnorm = accelX/vnorm
+		accelYnorm = accelY/vnorm
+		accelZnorm = accelZ/vnorm
+
+		print "X: %s Y: %s Z: %s" % (accelXnorm, accelYnorm, accelZnorm)
+
+		if accelZnorm < -0.8:
 			print "Upside down! Zaccel: %s" % accelZ
 			upsidedown = 1
 			return 0
@@ -454,7 +476,7 @@ def getHeading():
 def getHeading_function():
 	global heading
 
-	iopath='/sys/devices/ocp.2/4819c000.i2c/i2c-1/1-0019/iio:device0'
+	iopath=glob.glob('/sys/devices/ocp.2/4819c000.i2c/i2c-1/1-0019/iio:device*')[0]
 	if os.path.exists(iopath):
 		# Dummy read to kick IIO to refresh sysfs
 		f = open(iopath + '/in_accel_x_raw','r')
@@ -477,7 +499,7 @@ def getHeading_function():
 
 	print "Pitch: %s degrees, Roll: %s degrees" % (math.degrees(pitch), math.degrees(roll))
 
-	iopath='/sys/devices/ocp.2/4819c000.i2c/i2c-1/1-001e/iio:device1'
+	iopath=glob.glob('/sys/devices/ocp.2/4819c000.i2c/i2c-1/1-001e/iio:device*')[0]
 	if os.path.exists(iopath):
 		f = open(iopath + '/in_magn_x_raw','r')
 		magX=float(f.read())/1000.0
